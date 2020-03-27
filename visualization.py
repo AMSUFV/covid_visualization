@@ -29,7 +29,7 @@ def preprocess(df):
     tag_list = ['MD', 'CT', 'PV', 'CL', 'CM', 'AN', 'VC', 'GA', 'NC', 'AR', 'RI', 'EX', 'AS', 'CN', 'CB', 'IB', 'MC',
                 'ME', 'CE']
     name_list = ['Madrid', 'Cataluña', 'País Vasco', 'Castilla y León', 'Castilla-La Mancha', 'Andalucía',
-                 'Comunidad Valenciana', 'Galicia', 'Comunidad Foral de Navarra', 'Aragón', 'La Rioja', 'Extramadura',
+                 'Comunidad Valenciana', 'Galicia', 'Comunidad Foral de Navarra', 'Aragón', 'La Rioja', 'Extremadura',
                  'Principado de Asturias', 'Canarias', 'Cantabria', 'Islas Baleares', 'Murcia', 'Melilla', 'Ceuta']
     df.replace(tag_list, name_list, inplace=True)
 
