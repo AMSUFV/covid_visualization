@@ -44,7 +44,7 @@ def get_dashboard(df, key_dimensions, value_dimensions):
         opts.Overlay(show_frame=False, responsive=True)
             )
     renderer = hv.renderer('bokeh')
-    renderer.save(fig, 'other/index.html')
+    renderer.save(fig, 'docs/index.html')
 
 
 def generate_html(csv_url):
