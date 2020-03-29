@@ -57,7 +57,7 @@ def get_acc_table(complete_df):
     daily_cases = complete_df.groupby('Fecha').sum()
     daily_cases = daily_cases.reindex(index=daily_cases.index[::-1])
     table = hv.Table(daily_cases, kdims='Fecha', vdims=list(daily_cases.columns)[0:], label='Tabla')
-    table.opts(width=width, height=450, show_title=False)
+    table.opts(width=width, height=400, show_title=False)
     return table
 
 
@@ -134,48 +134,38 @@ def get_split(complete_df):
 def get_daily_increment(complete_df):
     df = complete_df.copy()
 
-    # preprocessing
-    # New columns
-    for column in df.columns[-4:]:
-        df[f'Incremento porcentual en {column}'] = ''
-        df[f'Incremento diario en {column}'] = ''
-
-    key_values = ['Casos', 'Hospitalizados', 'UCI', 'Fallecidos']
-    for ccaa in df['Comunidad Autónoma'].unique():
-        for value in key_values:
-            before = df.loc[df['Comunidad Autónoma'] == ccaa, :][value][1:]
-            after = df.loc[df['Comunidad Autónoma'] == ccaa, :][value][:-1]
-            difference = before.values - after.values
-            difference = np.append(difference, 0)
-
-            # daily increment
-            df.loc[df['Comunidad Autónoma'] == ccaa, f'Incremento diario en {value}'] = difference
-            # daily percentual increment, you have to replace the zeros for ones in order to divide properly
-            divisor = df.loc[df['Comunidad Autónoma'] == ccaa, :][value][:].values
-            divisor = np.where(divisor == 0, 1, divisor)
-
-            increment = difference / divisor
-            df.loc[df['Comunidad Autónoma'] == ccaa, f'Incremento porcentual en {value}'] = increment
-
-    df = pd.concat([df[['Comunidad Autónoma', 'Fecha']], df.filter(regex='Incremento')], axis=1)
-    df = pd.melt(df, id_vars=df.columns[:2], var_name='Estado', value_name='Incremento')
-
-    # plot
-    key_dimensions = ['Fecha', 'Estado']
-    value_dimensions = ['Incremento']
-
-    # for better date representation
+    df = df.groupby('Fecha').sum()[['Casos', 'Fallecidos']]
+    df.reset_index(inplace=True)
     df.Fecha = df.loc[:, 'Fecha'].dt.strftime('%d-%m')
 
-    # barplot
-    #     macro = hv.Table(df, key_dimensions, value_dimensions)
-    #     fig = macro.to.bars(key_dimensions, value_dimensions, ['Comunidad Autónoma', 'Estado'])
+    key_columns = ['Casos', 'Fallecidos']
+    colors = ['#cf3e3e', '#000000']
+    plots = []
+    for column, color in zip(key_columns, colors):
+        total = df[column].values
 
-    #     fig.opts(
-    #         opts.Bars(show_legend=True, stacked=True, aspect=16 / 9,
-    #                   ylabel='', xlabel='Fecha', responsive=True, tools=['hover'], title='Incremento',
-    #                   legend_position='top_left', xrotation=90, active_tools=['pan', 'wheel_zoom']),
-    #     )
+        after = total[1:]
+        before = total[:-1]
+        increment = after - before
+
+        # over total
+        increment = np.append(0, increment)
+        total = np.where(total == 0, 1, total)  # preventing divisions with 0
+        increment_per = (increment / total) * 100
+        df[f'Incremento porcentual en {column.lower()}'] = np.round(increment_per, 2)
+
+        #         # plot
+        bars = hv.Bars(df, kdims=['Fecha'], vdims=f'Incremento porcentual en {column.lower()}',
+                       label=f'Incremento porcentual en {column.lower()}')
+        bars.opts(width=width, height=height, color=color, xrotation=90, invert_xaxis=False,
+                  shared_axes=False, tools=['hover'], show_legend=True, show_grid=True,
+                  title='\nIncremento porcentual en {}'.format(column.lower()))
+        plots.append(bars)
+
+    layout = plots[0] + plots[1]
+    # layout.opts(tabs=True)
+
+    return layout
 
 
 def get_dashboard(csv_url):
@@ -186,12 +176,14 @@ def get_dashboard(csv_url):
     df = preprocess(df)
 
     # global cases by ccaa
-    fig_global = get_ccaa(df)
+    ccaa_bars = get_ccaa(df)
     # heatmap and table
-    heatmap = get_ccaa_heatmap(df)
+    ccaa_heatmap = get_ccaa_heatmap(df)
     table = get_acc_table(df)
+    # daily increment
+    daily_bars = get_daily_increment(df)
 
-    layout = (fig_global + heatmap * table).cols(2)
+    layout = (ccaa_bars + ccaa_heatmap * table + daily_bars).cols(2)
     render(layout, 'docs/index')
 
 
