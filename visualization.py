@@ -159,7 +159,7 @@ def get_daily_increment(complete_df):
                        label=f'Incremento porcentual en {column.lower()}')
         bars.opts(width=width, height=height, color=color, xrotation=90, invert_xaxis=False,
                   shared_axes=False, tools=['hover'], show_legend=True, show_grid=True,
-                  title='\nIncremento porcentual en {}'.format(column.lower()))
+                  title='\nIncremento porcentual en {}'.format(column.lower()), margin=(10, 0, 0, 0))
         plots.append(bars)
 
     layout = plots[0] + plots[1]
